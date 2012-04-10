@@ -182,6 +182,10 @@ public class InstanceIdentity
         for (String loc : locMap.keySet())
             seeds.add(locMap.get(loc).get(0).getHostName());
         seeds.remove(myInstance.getHostName());
+        // handle a non-clustered node by returning the localhost address, otherwise Cassandra will fail to start
+        if (seeds.isEmpty()) {
+            seeds.add("127.0.0.1");
+        }
         return seeds;
     }
 

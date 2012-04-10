@@ -1,13 +1,13 @@
 package com.netflix.priam.backup.identity;
 
+import com.google.common.collect.Iterables;
 import com.netflix.priam.identity.DoubleRing;
+import com.netflix.priam.identity.InstanceIdentity;
 import com.netflix.priam.identity.PriamInstance;
 import com.netflix.priam.utils.TokenManager;
-import org.junit.Test;
-
 import java.util.List;
-
 import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 
 public class InstanceIdentityTest extends InstanceTestUtils
 {
@@ -15,8 +15,7 @@ public class InstanceIdentityTest extends InstanceTestUtils
     @Test
     public void testCreateToken() throws Exception
     {
-
-        identity = createInstanceIdentity("az1", "fakeinstance1");
+        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstance1");
         int hash = TokenManager.regionOffset(config.getDC());
         assertEquals(0, identity.getInstance().getId() - hash);
 
@@ -52,7 +51,7 @@ public class InstanceIdentityTest extends InstanceTestUtils
     {
         createInstances();
         instances.remove("fakeinstance4");
-        identity = createInstanceIdentity("az2", "fakeinstancex");
+        InstanceIdentity identity = createInstanceIdentity("az2", "fakeinstancex");
         int hash = TokenManager.regionOffset(config.getDC());
         assertEquals(1, identity.getInstance().getId() - hash);
     }
@@ -61,11 +60,17 @@ public class InstanceIdentityTest extends InstanceTestUtils
     public void testGetSeeds() throws Exception
     {
         createInstances();
-        identity = createInstanceIdentity("az1", "fakeinstancex");
+        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstancex");
         assertEquals(3, identity.getSeeds().size());
 
         identity = createInstanceIdentity("az1", "fakeinstance1");
         assertEquals(2, identity.getSeeds().size());
+    }
+    
+    @Test
+    public void testGetSeeds_singleNode() throws Exception {
+        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstance1");
+        assertEquals("127.0.0.1", Iterables.getOnlyElement(identity.getSeeds()));
     }
 
     @Test
@@ -95,7 +100,7 @@ public class InstanceIdentityTest extends InstanceTestUtils
         config.zone = "az1";
         config.instance_id = "fakeinstancex";
         int hash = TokenManager.regionOffset(config.getDC());
-        identity = createInstanceIdentity("az1", "fakeinstancex");
+        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstancex");
         printInstance(identity.getInstance(), hash);
     }
 
