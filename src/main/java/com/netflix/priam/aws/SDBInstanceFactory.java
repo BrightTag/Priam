@@ -46,7 +46,12 @@ public class SDBInstanceFactory implements IPriamInstanceFactory
         }
         sort(return_);
         return return_;
+    }
 
+    @Override
+    public PriamInstance getInstance(String appName, int id)
+    {
+      return dao.getInstance(appName, id);
     }
 
     @Override
