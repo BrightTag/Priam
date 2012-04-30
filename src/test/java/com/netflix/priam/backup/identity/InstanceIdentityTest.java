@@ -2,7 +2,6 @@ package com.netflix.priam.backup.identity;
 
 import java.util.List;
 
-import com.google.common.collect.Iterables;
 import com.netflix.priam.identity.DoubleRing;
 import com.netflix.priam.identity.InstanceIdentity;
 import com.netflix.priam.identity.PriamInstance;
@@ -68,12 +67,6 @@ public class InstanceIdentityTest extends InstanceTestUtils
 
         identity = createInstanceIdentity("az1", "fakeinstance1");
         assertEquals(3, identity.getSeeds().size());
-    }
-    
-    @Test
-    public void testGetSeeds_singleNode() throws Exception {
-        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstance1");
-        assertEquals("127.0.0.1", Iterables.getOnlyElement(identity.getSeeds()));
     }
 
     @Test

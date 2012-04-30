@@ -65,6 +65,7 @@ public class CassandraConfig
         }
         catch (Exception e)
         {
+            // TODO: can this ever happen? if so, what conditions would cause an exception here?
             logger.error("Error while executing get_token", e);
             return Response.serverError().build();
         }
@@ -81,6 +82,7 @@ public class CassandraConfig
         }
         catch (Exception e)
         {
+            // TODO: can this ever happen? if so, what conditions would cause an exception here?
             logger.error("Error while executing is_replace_token", e);
             return Response.serverError().build();
         }
