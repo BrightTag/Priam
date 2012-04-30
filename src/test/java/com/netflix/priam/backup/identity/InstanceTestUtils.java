@@ -22,7 +22,6 @@ public abstract class InstanceTestUtils
     IMembership membership;
     FakeConfiguration config;
     IPriamInstanceFactory factory;
-    InstanceIdentity identity;
     Sleeper sleeper;
 
     @Before
@@ -46,6 +45,7 @@ public abstract class InstanceTestUtils
 
     public void createInstances() throws Exception
     {
+        // these all get cached in the FakePriamInstanceFactory
         createInstanceIdentity("az1", "fakeinstance1");
         createInstanceIdentity("az1", "fakeinstance2");
         createInstanceIdentity("az1", "fakeinstance3");

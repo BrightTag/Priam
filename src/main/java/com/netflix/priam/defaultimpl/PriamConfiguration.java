@@ -1,35 +1,25 @@
 package com.netflix.priam.defaultimpl;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
-
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.amazonaws.services.ec2.model.AvailabilityZone;
-import com.amazonaws.services.ec2.model.DescribeAvailabilityZonesRequest;
-import com.amazonaws.services.ec2.model.DescribeAvailabilityZonesResult;
-import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
-import com.amazonaws.services.ec2.model.DescribeInstancesResult;
-import com.amazonaws.services.ec2.model.Instance;
-import com.amazonaws.services.ec2.model.Reservation;
+import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.simpledb.AmazonSimpleDBClient;
 import com.amazonaws.services.simpledb.model.Attribute;
 import com.amazonaws.services.simpledb.model.Item;
 import com.amazonaws.services.simpledb.model.SelectRequest;
 import com.amazonaws.services.simpledb.model.SelectResult;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.google.common.collect.Lists;
 import com.netflix.priam.IConfiguration;
 import com.netflix.priam.ICredential;
 import com.netflix.priam.utils.SystemUtils;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
 
 @Singleton
 public class PriamConfiguration implements IConfiguration
@@ -147,11 +137,24 @@ public class PriamConfiguration implements IConfiguration
     {
         setupEnvVars();
         setDefaultRACList(REGION);
-        populateProps();
+        populateSimpleDBConfigurations();
+        overrideSimpleDBConfigurationsWithSystemProperties();
+        logger.debug("PriamConfiguration:\n" + config);
         SystemUtils.createDirs(getBackupCommitLogLocation());
         SystemUtils.createDirs(getCommitLogLocation());
         SystemUtils.createDirs(getCacheLocation());
         SystemUtils.createDirs(getDataFileLocation());
+    }
+
+    /*
+     * HACK - This class requires much refactoring to allow more flexible configuration, for now just allow for
+     * overriding config parameters in system properties vs requiring SimpleDB updates.
+     */
+    private void overrideSimpleDBConfigurationsWithSystemProperties()
+    {
+        for (Map.Entry entry : System.getProperties().entrySet()) {
+            config.put(entry.getKey(), entry.getValue());
+        }
     }
 
     private void setupEnvVars()
@@ -209,8 +212,7 @@ public class PriamConfiguration implements IConfiguration
         DEFAULT_AVAILABILITY_ZONES =  StringUtils.join(zone, ",");
     }
 
-
-    private void populateProps()
+    private void populateSimpleDBConfigurations()
     {
         // End point is us-east-1
         AmazonSimpleDBClient simpleDBClient = new AmazonSimpleDBClient(new BasicAWSCredentials(provider.getAccessKeyId(), provider.getSecretAccessKey()));
@@ -230,7 +232,6 @@ public class PriamConfiguration implements IConfiguration
                 addProperty(itemiter.next());
 
         } while (nextToken != null);
-
     }
 
     private void addProperty(Item item)
