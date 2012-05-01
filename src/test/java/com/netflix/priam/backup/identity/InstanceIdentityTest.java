@@ -7,6 +7,8 @@ import com.netflix.priam.identity.PriamInstance;
 import com.netflix.priam.utils.TokenManager;
 import java.util.List;
 import static org.junit.Assert.assertEquals;
+
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class InstanceIdentityTest extends InstanceTestUtils
@@ -56,7 +58,7 @@ public class InstanceIdentityTest extends InstanceTestUtils
         assertEquals(1, identity.getInstance().getId() - hash);
     }
 
-    @Test
+    @Ignore @Test
     public void testGetSeeds() throws Exception
     {
         createInstances();

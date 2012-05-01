@@ -55,11 +55,11 @@ public class SDBInstanceFactory implements IPriamInstanceFactory
     }
 
     @Override
-    public PriamInstance create(String app, int id, String instanceID, String hostname, String ip, String rac, Map<String, Object> volumes, String payload)
+    public PriamInstance create(String app, int id, String instanceID, String hostname, String ip, String rac, Map<String, Object> volumes, String token)
     {
         try
         {
-            PriamInstance ins = makePriamInstance(app, id, instanceID, hostname, ip, rac, volumes, payload);
+            PriamInstance ins = makePriamInstance(app, id, instanceID, hostname, ip, rac, volumes, token);
             // remove old data node which are dead.
             if (app.endsWith("-dead"))
             {
@@ -139,7 +139,7 @@ public class SDBInstanceFactory implements IPriamInstanceFactory
         // TODO Auto-generated method stub
     }
 
-    private PriamInstance makePriamInstance(String app, int id, String instanceID, String hostname, String ip, String rac, Map<String, Object> volumes, String payload)
+    private PriamInstance makePriamInstance(String app, int id, String instanceID, String hostname, String ip, String rac, Map<String, Object> volumes, String token)
     {
         Map<String, Object> v = (volumes == null) ? new HashMap<String, Object>() : volumes;
         PriamInstance ins = new PriamInstance();
@@ -150,7 +150,7 @@ public class SDBInstanceFactory implements IPriamInstanceFactory
         ins.setId(id);
         ins.setInstanceId(instanceID);
         ins.setDC(config.getDC());
-        ins.setToken(payload);
+        ins.setToken(token);
         ins.setVolumes(v);
         return ins;
     }

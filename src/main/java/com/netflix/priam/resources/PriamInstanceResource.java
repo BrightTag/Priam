@@ -1,8 +1,8 @@
 package com.netflix.priam.resources;
 
 import java.net.URI;
-import java.util.Map;
 
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -63,10 +63,7 @@ public class PriamInstanceResource
     @Path("{id}")
     public String getInstance(@PathParam("id") int id)
     {
-        PriamInstance node = factory.getInstance(config.getAppName(), id);
-        if (node == null) {
-          throw notFound(String.format("No priam instance with id %s found", id));
-        }
+        PriamInstance node = getByIdIfFound(id);
         return node.toString();
     }
 
@@ -74,20 +71,54 @@ public class PriamInstanceResource
      * Creates a new instance with the given parameters
      *
      * @param id the node id
-     * @return Response (201) with vendor entity if the vendor was created
-     * @throws WebApplicationException (400) if the vendor already exists or invalid vendor data
+     * @return Response (201) if the instance was created
      */
     @POST
-    public Response createInstance(@QueryParam("id") int id, @QueryParam("instanceID") String instanceID,
-        @QueryParam("hostname") String hostname, @QueryParam("ip") String ip, @QueryParam("rac") String rac,
-        @QueryParam("volumes") Map<String,Object> volumes, @QueryParam("payload") String payload)
+    public Response createInstance(
+        @QueryParam("id") int id, @QueryParam("instanceID") String instanceID,
+        @QueryParam("hostname") String hostname, @QueryParam("ip") String ip,
+        @QueryParam("rack") String rack, @QueryParam("token") String token)
     {
-        factory.create(config.getAppName(), id, instanceID, hostname, ip, rac, volumes, payload);
+        factory.create(config.getAppName(), id, instanceID, hostname, ip, rack, null, token);
         URI uri = UriBuilder.fromPath("/{id}").build(id);
         return Response.created(uri).build();
     }
 
-    private WebApplicationException notFound(String message) {
-      return new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity(message).build());
+    /**
+     * Deletes the instance with the given {@code id}.
+     * 
+     * @param id the node id
+     * @return Response (204) if the instance was deleted
+     * @throws WebApplicationException (404) if no priam instance found with {@code id}
+     */
+    @DELETE
+    @Path("{id}")
+    public Response deleteInstance(@PathParam("id") int id)
+    {
+        PriamInstance instance = getByIdIfFound(id);
+        factory.delete(instance);
+        return Response.noContent().build();
+    }
+
+    /**
+     * Returns the PriamInstance with the given {@code id}, or
+     * throws a WebApplicationException if none found.
+     * 
+     * @param id the node id
+     * @return PriamInstance with the given {@code id}
+     * @throws WebApplicationException (400)
+     */
+    private PriamInstance getByIdIfFound(int id)
+    {
+        PriamInstance instance = factory.getInstance(config.getAppName(), id);
+        if (instance == null) {
+            throw notFound(String.format("No priam instance with id %s found", id));
+        }
+        return instance;
+    }
+
+    private static WebApplicationException notFound(String message)
+    {
+        return new WebApplicationException(Response.status(Response.Status.NOT_FOUND).entity(message).build());
     }
 }
