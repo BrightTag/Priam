@@ -1,19 +1,19 @@
 package com.netflix.priam.aws;
 
-import java.util.List;
-import java.util.Random;
+import java.util.Set;
 
-import com.google.common.collect.Lists;
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.netflix.priam.IConfiguration;
 import com.netflix.priam.identity.IMembership;
 import com.netflix.priam.identity.IPriamInstanceFactory;
-import com.netflix.priam.identity.InstanceIdentity;
 import com.netflix.priam.identity.PriamInstance;
-import com.netflix.priam.scheduler.SimpleTimer;
-import com.netflix.priam.scheduler.Task;
-import com.netflix.priam.scheduler.TaskTimer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * this class will associate an Public IP's with a new instance so they can talk
@@ -29,83 +29,64 @@ import com.netflix.priam.scheduler.TaskTimer;
  * amazons case).
  * 
  */
-@Singleton
-public class UpdateSecuritySettings extends Task
+public class UpdateSecuritySettings
 {
-    public static final String JOBNAME = "Update_SG";
-    public static boolean firstTimeUpdated = false;
+    private static final Logger log = LoggerFactory.getLogger(UpdateSecuritySettings.class);
+  
+    // todo: configurable ports
+    private static final int port = 7103;
 
-    private static final Random ran = new Random();
     private final IMembership membership;
     private final IPriamInstanceFactory factory;
+    private final String clusterName;
+    private final String securityGroupName;
 
     @Inject
     public UpdateSecuritySettings(IConfiguration config, IMembership membership, IPriamInstanceFactory factory)
     {
-        super(config);
         this.membership = membership;
         this.factory = factory;
+        this.clusterName = config.getAppName();
+        // todo: create a distinct configuration for the security group
+        this.securityGroupName = config.getAppName();
     }
+
+    private static final Function<PriamInstance, String> INSTANCE_TO_IP_RANGE = new Function<PriamInstance, String>()
+    {
+        @Override
+        public String apply(PriamInstance priamInstance)
+        {
+            return priamInstance.getHostIP() + "/32";
+        }
+    };
 
     /**
-     * Seeds nodes execute this at the specifed interval.
-     * Other nodes run only on startup.
-     * Seeds in cassandra are the first node in each Availablity Zone.
+     * Update the security group permissions to match those and only those needed by the registered
+     * PriamInstances.
+     *
+     * @return Set of ipRanges added to security group
      */
-    @Override
-    public void execute()
+    public Set<String> updateSecurityGroup()
     {
-        // if seed dont execute.
-        List<String> acls = membership.listACL();
-        List<PriamInstance> instances = factory.getAllIds(config.getAppName());
+        Set<String> existingIpPermissions = membership.listIpRangesInSecurityGroup(securityGroupName);
+        Set<String> requiredIpPermissions = ImmutableSet.copyOf(
+            Iterables.transform(factory.getAllIds(clusterName), INSTANCE_TO_IP_RANGE));
 
-        // iterate to add...
-        List<String> add = Lists.newArrayList();
-        for (PriamInstance instance : factory.getAllIds(config.getAppName()))
-        {
-            String range = instance.getHostIP() + "/32";
-            if (!acls.contains(range))
-                add.add(range);
-        }
-        if (add.size() > 0)
-        {
-            membership.addACL(add, 7103, 7103);
-            firstTimeUpdated = true;
-        }
-
-        // just iterate to generate ranges.
-        List<String> currentRanges = Lists.newArrayList();
-        for (PriamInstance instance : instances)
-        {
-            String range = instance.getHostIP() + "/32";
-            currentRanges.add(range);
-        }
-
-        // iterate to remove...
-        List<String> remove = Lists.newArrayList();
-        for (String acl : acls)
-            if (!currentRanges.contains(acl)) // if not found then remove....
-                remove.add(acl);
-        if (remove.size() > 0)
-        {
-            membership.removeACL(remove, 7103, 7103);
-            firstTimeUpdated = true;
-        }
+        Set<String> ruleAdditions = Sets.difference(requiredIpPermissions, existingIpPermissions);
+        addRules(ruleAdditions);
+        removeRules(Sets.difference(existingIpPermissions, requiredIpPermissions));
+        return ruleAdditions;
     }
 
-    public static TaskTimer getTimer(InstanceIdentity id)
+    private void addRules(Set<String> ipRanges)
     {
-        SimpleTimer return_;
-        if (id.isSeed())
-            return_ = new SimpleTimer(JOBNAME, 120 * 1000 + ran.nextInt(120 * 1000));
-        else
-            return_ = new SimpleTimer(JOBNAME);
-        return return_;
+        membership.addIngressRules(securityGroupName, ipRanges, port);
+        log.info("Added rules for security group {} : {}", securityGroupName, ipRanges);
     }
 
-    @Override
-    public String getName()
+    private void removeRules(Set<String> ipRanges)
     {
-        return JOBNAME;
+        membership.removeIngressRules(securityGroupName, ipRanges, port);
+        log.info("Revoked rules for security group {} : {}", securityGroupName, ipRanges);
     }
 }

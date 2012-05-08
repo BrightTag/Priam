@@ -1,5 +1,13 @@
 package com.netflix.priam.identity;
 
+import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+
 import com.google.common.base.Supplier;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
@@ -10,11 +18,9 @@ import com.netflix.priam.IConfiguration;
 import com.netflix.priam.utils.RetryableCallable;
 import com.netflix.priam.utils.Sleeper;
 import com.netflix.priam.utils.TokenManager;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.UnknownHostException;
-import java.util.*;
 
 /**
  * This class provides the central place to create and consume the identity of
@@ -107,7 +113,7 @@ public class InstanceIdentity
         public PriamInstance retriableCall() throws Exception
         {
             final List<PriamInstance> allIds = factory.getAllIds(config.getAppName());
-            List<String> asgInstances = membership.getRacMembership();
+            Set<String> asgInstances = membership.getAutoScalingGroupActiveMembers(config.getASGName());
             // Sleep random interval - upto 15 sec
             sleeper.sleep(new Random().nextInt(5000) + 10000);
             for (PriamInstance dead : allIds)
@@ -155,8 +161,10 @@ public class InstanceIdentity
             else
                 my_slot = config.getRacs().size() + maxSlot;
 
-            String payload = TokenManager.createToken(my_slot, membership.getRacCount(), membership.getRacMembershipSize(), config.getDC());
-            return factory.create(config.getAppName(), my_slot + hash, config.getInstanceName(), config.getHostname(), config.getHostIP(), config.getRac(), null, payload);
+            String payload = TokenManager.createToken(my_slot, config.getRacs().size(),
+                membership.getAutoScalingGroupMaxSize(config.getASGName()), config.getDC());
+            return factory.create(config.getAppName(), my_slot + hash, config.getInstanceName(),
+                config.getHostname(), config.getHostIP(), config.getRac(), null, payload);
         }
 
         public void forEachExecution()
@@ -173,7 +181,7 @@ public class InstanceIdentity
         if (config.getRacs().size() == 1)
         {
             // Return empty list if all nodes are not up
-            if (membership.getRacMembershipSize() != locMap.get(myInstance.getRac()).size())
+            if (membership.getAutoScalingGroupMaxSize(config.getASGName()) != locMap.get(myInstance.getRac()).size())
                 return seeds;
             // If seed node, return the next node in the list
             if (locMap.get(myInstance.getRac()).size() > 1 && locMap.get(myInstance.getRac()).get(0).getHostName().equals(myInstance.getHostName()))

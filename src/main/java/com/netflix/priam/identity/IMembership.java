@@ -1,7 +1,7 @@
 package com.netflix.priam.identity;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.Set;
 
 /**
  * Interface to manage membership meta information such as size of RAC, list of
@@ -10,53 +10,35 @@ import java.util.List;
 public interface IMembership
 {
     /**
-     * Get a list of Instances in the current RAC
-     * 
-     * @return
+     * Return the set of ec2 instances in the provided AWS auto-scaling group
      */
-    public List<String> getRacMembership();
+    public Set<String> getAutoScalingGroupActiveMembers(String autoScalingGroupName);
 
     /**
-     * @return Size of current RAC
+     * @return maximum size of the named auto-scaling group
      */
-    public int getRacMembershipSize();
+    public int getAutoScalingGroupMaxSize(String autoScalingGroupName);
 
     /**
-     * Number of RACs
-     * 
-     * @return
+     * Add security group ingress rules
+     *
+     * @param securityGroupName ec2 security group name
+     * @param listIPs ip address permissions in CIDR notation (e.g. "198.51.100.1/24")
+     * @param port listen port defined in rules
      */
-    public int getRacCount();
+    public void addIngressRules(String securityGroupName, Collection<String> listIPs, int port);
 
     /**
-     * Add security group ACLs
-     * 
-     * @param listIPs
-     * @param from
-     * @param to
+     * Remove security group ingress rules
+     *
+     * @param securityGroupName ec2 security group name
+     * @param listIPs ip address permissions in CIDR notation (e.g. "198.51.100.1/24")
+     * @param port listen port defined in rules
      */
-    public void addACL(Collection<String> listIPs, int from, int to);
+    public void removeIngressRules(String securityGroupName, Collection<String> listIPs, int port);
 
     /**
-     * Remove security group ACLs
-     * 
-     * @param listIPs
-     * @param from
-     * @param to
+     * List all IP address ranges in CIDR notation permitted by the given security group.
      */
-    public void removeACL(Collection<String> listIPs, int from, int to);
-
-    /**
-     * List all ACLs
-     * 
-     * @return
-     */
-    public List<String> listACL();
-
-    /**
-     * Expand the membership size by 1.
-     * 
-     * @param count
-     */
-    public void expandRacMembership(int count);
+    public Set<String> listIpRangesInSecurityGroup(String securityGroupName);
 }

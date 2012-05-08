@@ -33,7 +33,7 @@ public class InjectedWebListener extends GuiceServletContextListener
         try
         {
             injector.getInstance(IConfiguration.class).intialize();
-            injector.getInstance(PriamServer.class).intialize();
+            injector.getInstance(PriamServer.class).initialize();
         }
         catch (Exception e)
         {
