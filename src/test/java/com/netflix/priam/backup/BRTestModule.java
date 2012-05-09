@@ -4,12 +4,14 @@ import java.util.Arrays;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.google.inject.name.Names;
 import com.netflix.priam.FakeConfiguration;
 import com.netflix.priam.FakeMembership;
 import com.netflix.priam.FakePriamInstanceFactory;
 import com.netflix.priam.IConfiguration;
 import com.netflix.priam.ICredential;
 import com.netflix.priam.aws.S3BackupPath;
+import com.netflix.priam.aws.UpdateSecuritySettings;
 import com.netflix.priam.compress.ICompression;
 import com.netflix.priam.compress.SnappyCompression;
 import com.netflix.priam.identity.IMembership;
@@ -36,5 +38,6 @@ public class BRTestModule extends AbstractModule
         bind(AbstractBackupPath.class).to(S3BackupPath.class);
         bind(ICompression.class).to(SnappyCompression.class);
         bind(Sleeper.class).to(FakeSleeper.class);
+        bindConstant().annotatedWith(Names.named(UpdateSecuritySettings.PORT_BINDING)).to(9999);
     }
 }

@@ -2,11 +2,14 @@ package com.netflix.priam.aws;
 
 import java.util.Set;
 
+import javax.ws.rs.HEAD;
+
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.netflix.priam.IConfiguration;
 import com.netflix.priam.identity.IMembership;
 import com.netflix.priam.identity.IPriamInstanceFactory;
@@ -32,21 +35,24 @@ import org.slf4j.LoggerFactory;
 public class UpdateSecuritySettings
 {
     private static final Logger log = LoggerFactory.getLogger(UpdateSecuritySettings.class);
-  
-    // todo: configurable ports
-    private static final int port = 7103;
 
+    public static final String JOBNAME = "Update_SG";
+    public static final String PORT_BINDING = "IngressRulePort";
+    
     private final IMembership membership;
     private final IPriamInstanceFactory factory;
     private final String clusterName;
     private final String securityGroupName;
+    private final int port;
 
     @Inject
-    public UpdateSecuritySettings(IConfiguration config, IMembership membership, IPriamInstanceFactory factory)
+    public UpdateSecuritySettings(IConfiguration config, IMembership membership, IPriamInstanceFactory factory,
+        @Named(PORT_BINDING) int port)
     {
         this.membership = membership;
         this.factory = factory;
         this.clusterName = config.getAppName();
+        this.port = port;
         // todo: create a distinct configuration for the security group
         this.securityGroupName = config.getAppName();
     }

@@ -9,12 +9,14 @@ import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import com.netflix.priam.IConfiguration;
 import com.netflix.priam.ICredential;
 import com.netflix.priam.aws.AWSMembership;
 import com.netflix.priam.aws.S3BackupPath;
 import com.netflix.priam.aws.S3FileSystem;
 import com.netflix.priam.aws.SDBInstanceFactory;
+import com.netflix.priam.aws.UpdateSecuritySettings;
 import com.netflix.priam.backup.AbstractBackupPath;
 import com.netflix.priam.backup.IBackupFileSystem;
 import com.netflix.priam.compress.ICompression;
@@ -62,6 +64,13 @@ public class PriamGuiceModule extends AbstractModule
     @Provides @Singleton
     AWSCredentials provideAwsCredentials(ICredential credential) {
         return new BasicAWSCredentials(credential.getAccessKeyId(), credential.getSecretAccessKey());
+    }
+
+    @Provides @Singleton @Named(UpdateSecuritySettings.PORT_BINDING)
+    int provideIngressRulePort()
+    {
+        // todo : default to standard cassandra gossip port 7000
+        return Integer.getInteger("priam.security.ingress_rule_port", 7103);
     }
 
     /*
