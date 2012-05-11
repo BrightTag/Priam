@@ -1,6 +1,7 @@
 package com.netflix.priam.resources;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -8,14 +9,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.inject.Inject;
 import com.netflix.priam.PriamServer;
 import com.netflix.priam.identity.DoubleRing;
+
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This servlet will provide the configuration API service as and when Cassandra
@@ -42,16 +42,15 @@ public class CassandraConfig
     {
         try
         {
-            if (CollectionUtils.isNotEmpty(priamServer.getId().getSeeds()))
-                return Response.ok(StringUtils.join(priamServer.getId().getSeeds(), ',')).build();
-            logger.error("Cannot find the Seeds " + priamServer.getId().getSeeds());
+            List<String> seeds = priamServer.getId().getSeeds();
+            return seeds.isEmpty() ? Response.status(404).build() :
+                Response.ok(StringUtils.join(seeds, ',')).build();
         }
         catch (Exception e)
         {
             logger.error("Error while executing get_seeds", e);
             return Response.serverError().build();
         }
-        return Response.status(404).build();
     }
 
     @GET

@@ -1,9 +1,16 @@
 package com.netflix.priam.defaultimpl;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.amazonaws.services.ec2.model.*;
+import com.amazonaws.services.ec2.model.AvailabilityZone;
+import com.amazonaws.services.ec2.model.DescribeAvailabilityZonesResult;
 import com.amazonaws.services.simpledb.AmazonSimpleDBClient;
 import com.amazonaws.services.simpledb.model.Attribute;
 import com.amazonaws.services.simpledb.model.Item;
@@ -15,11 +22,10 @@ import com.google.inject.Singleton;
 import com.netflix.priam.IConfiguration;
 import com.netflix.priam.ICredential;
 import com.netflix.priam.utils.SystemUtils;
+
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
 
 @Singleton
 public class PriamConfiguration implements IConfiguration
@@ -79,7 +85,6 @@ public class PriamConfiguration implements IConfiguration
     private final String PUBLIC_IP = SystemUtils.getDataFromUrl("http://169.254.169.254/latest/meta-data/public-ipv4");
     private final String INSTANCE_ID = SystemUtils.getDataFromUrl("http://169.254.169.254/latest/meta-data/instance-id");
     private final String INSTANCE_TYPE = SystemUtils.getDataFromUrl("http://169.254.169.254/latest/meta-data/instance-type");
-    private static String ASG_NAME = System.getenv("ASG_NAME");
     private static String REGION = System.getenv("EC2_REGION");
 
     // Defaults 
@@ -115,7 +120,7 @@ public class PriamConfiguration implements IConfiguration
 
     private static class Attributes
     {
-        public final static String APP_ID = "appId"; // ASG
+        public final static String APP_ID = "appId";
         public final static String PROPERTY = "property";
         public final static String PROPERTY_VALUE = "value";
         public final static String REGION = "region";
@@ -135,7 +140,7 @@ public class PriamConfiguration implements IConfiguration
     @Override
     public void intialize()
     {
-        setupEnvVars();
+        getEc2Region();
         setDefaultRACList(REGION);
         populateSimpleDBConfigurations();
         overrideSimpleDBConfigurationsWithSystemProperties();
@@ -157,42 +162,14 @@ public class PriamConfiguration implements IConfiguration
         }
     }
 
-    private void setupEnvVars()
+    private void getEc2Region()
     {
         // Search in java opt properties
         REGION = StringUtils.isBlank(REGION) ? System.getProperty("EC2_REGION") : REGION;
         // Infer from zone
         if (StringUtils.isBlank(REGION))
             REGION = RAC.substring(0, RAC.length() - 1);
-        ASG_NAME = StringUtils.isBlank(ASG_NAME) ? System.getProperty("ASG_NAME") : ASG_NAME;
-        if (StringUtils.isBlank(ASG_NAME))
-            ASG_NAME = populateASGName(REGION, INSTANCE_ID);
-        logger.info(String.format("REGION set to %s, ASG Name set to %s", REGION, ASG_NAME));
-    }
-
-    /**
-     * Query amazon to get ASG name. Currently not available as part of instance
-     * info api.
-     */
-    private String populateASGName(String region, String instanceId)
-    {
-        AmazonEC2 client = new AmazonEC2Client(new BasicAWSCredentials(provider.getAccessKeyId(), provider.getSecretAccessKey()));
-        client.setEndpoint("ec2." + region + ".amazonaws.com");
-        DescribeInstancesRequest desc = new DescribeInstancesRequest().withInstanceIds(instanceId);
-        DescribeInstancesResult res = client.describeInstances(desc);
-
-        for (Reservation resr : res.getReservations())
-        {
-            for (Instance ins : resr.getInstances())
-            {
-                for (com.amazonaws.services.ec2.model.Tag tag : ins.getTags())
-                {
-                    if (tag.getKey().equals("aws:autoscaling:groupName"))
-                        return tag.getValue();
-                }
-            }
-        }
-        return null;
+        logger.info("REGION set to " + REGION);
     }
     
     /**
@@ -214,13 +191,12 @@ public class PriamConfiguration implements IConfiguration
 
     private void populateSimpleDBConfigurations()
     {
+        String appid = System.getProperty("priam.simpledb.domain", "cassandra");
         // End point is us-east-1
         AmazonSimpleDBClient simpleDBClient = new AmazonSimpleDBClient(new BasicAWSCredentials(provider.getAccessKeyId(), provider.getSecretAccessKey()));
         config = new PriamProperties();
-        config.put(CONFIG_ASG_NAME, ASG_NAME);
         config.put(CONFIG_REGION_NAME, REGION);
         String nextToken = null;
-        String appid = ASG_NAME.lastIndexOf('-') > 0 ? ASG_NAME.substring(0, ASG_NAME.lastIndexOf('-')): ASG_NAME;
         do
         {
             SelectRequest request = new SelectRequest(String.format(ALL_QUERY, appid));

@@ -1,13 +1,16 @@
 package com.netflix.priam.backup.identity;
 
+import java.util.List;
+
 import com.google.common.collect.Iterables;
 import com.netflix.priam.identity.DoubleRing;
 import com.netflix.priam.identity.InstanceIdentity;
 import com.netflix.priam.identity.PriamInstance;
 import com.netflix.priam.utils.TokenManager;
-import java.util.List;
-import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class InstanceIdentityTest extends InstanceTestUtils
 {
@@ -64,7 +67,7 @@ public class InstanceIdentityTest extends InstanceTestUtils
         assertEquals(3, identity.getSeeds().size());
 
         identity = createInstanceIdentity("az1", "fakeinstance1");
-        assertEquals(2, identity.getSeeds().size());
+        assertEquals(3, identity.getSeeds().size());
     }
     
     @Test

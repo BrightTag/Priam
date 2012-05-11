@@ -1,16 +1,15 @@
 package com.netflix.priam.identity;
 
 import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import com.google.common.base.Supplier;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimaps;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -31,13 +30,6 @@ import org.slf4j.LoggerFactory;
 public class InstanceIdentity
 {
     private static final Logger logger = LoggerFactory.getLogger(InstanceIdentity.class);
-    private final ListMultimap<String, PriamInstance> locMap = Multimaps.newListMultimap(new HashMap<String, Collection<PriamInstance>>(), new Supplier<List<PriamInstance>>()
-    {
-        public List<PriamInstance> get()
-        {
-            return Lists.newArrayList();
-        }
-    });
     private final IPriamInstanceFactory factory;
     private final IMembership membership;
     private final IConfiguration config;
@@ -98,13 +90,17 @@ public class InstanceIdentity
         logger.info("My token: " + myInstance.getToken());
     }
 
-    private void populateRacMap()
+    private ListMultimap<String, PriamInstance> getRacMap()
     {
-        locMap.clear();
-        for (PriamInstance ins : factory.getAllIds(config.getAppName()))
+        return Multimaps.index(factory.getAllIds(config.getAppName()), 
+            new Function<PriamInstance, String>()
         {
-            locMap.put(ins.getRac(), ins);
-        }
+            @Override
+            public String apply(PriamInstance instance)
+            {
+                return instance.getRac();
+            }
+        });
     }
 
     public class GetDeadToken extends RetryableCallable<PriamInstance>
@@ -133,11 +129,6 @@ public class InstanceIdentity
             }
             return null;
         }
-
-        public void forEachExecution()
-        {
-            populateRacMap();
-        }
     }
 
     public class GetNewToken extends RetryableCallable<PriamInstance>
@@ -146,16 +137,20 @@ public class InstanceIdentity
         public PriamInstance retriableCall() throws Exception
         {
             // Sleep random interval - upto 15 sec
+            // TODO : remove!
             sleeper.sleep(new Random().nextInt(15000));
+
+            ListMultimap<String, PriamInstance> locMap = getRacMap();
             int hash = TokenManager.regionOffset(config.getDC());
             // use this hash so that the nodes are spred far away from the other
             // regions.
 
             int max = hash;
-            for (PriamInstance data : factory.getAllIds(config.getAppName()))
+            for (PriamInstance data : locMap.values())
                 max = (data.getRac().equals(config.getRac()) && (data.getId() > max)) ? data.getId() : max;
             int maxSlot = max - hash;
             int my_slot = 0;
+            
             if (hash == max && locMap.get(config.getRac()).size() == 0)
                 my_slot = config.getRacs().indexOf(config.getRac()) + maxSlot;
             else
@@ -166,45 +161,41 @@ public class InstanceIdentity
             return factory.create(config.getAppName(), my_slot + hash, config.getInstanceName(),
                 config.getHostname(), config.getHostIP(), config.getRac(), null, payload);
         }
-
-        public void forEachExecution()
-        {
-            populateRacMap();
-        }
     }
+
+    private final Predicate<PriamInstance> differentHostPredicate = new Predicate<PriamInstance>() {
+        @Override
+        public boolean apply(PriamInstance instance) {
+            return !instance.getHostName().equals(myInstance.getHostName());
+        }
+    };
 
     public List<String> getSeeds() throws UnknownHostException
     {
-        populateRacMap();
+        ListMultimap<String, PriamInstance> locMap = getRacMap();
         List<String> seeds = new LinkedList<String>();
-        // Handle single zone deployment
-        if (config.getRacs().size() == 1)
-        {
-            // Return empty list if all nodes are not up
-            if (membership.getAutoScalingGroupMaxSize(config.getASGName()) != locMap.get(myInstance.getRac()).size())
-                return seeds;
-            // If seed node, return the next node in the list
-            if (locMap.get(myInstance.getRac()).size() > 1 && locMap.get(myInstance.getRac()).get(0).getHostName().equals(myInstance.getHostName()))
-                seeds.add(locMap.get(myInstance.getRac()).get(1).getHostName());
-        }
         for (String loc : locMap.keySet())
-            seeds.add(locMap.get(loc).get(0).getHostName());
-        seeds.remove(myInstance.getHostName());
+        {
+            PriamInstance instance = Iterables.tryFind(locMap.get(loc), differentHostPredicate).orNull();
+            if (instance != null)
+                seeds.add(instance.getHostName());
+        }
         // handle a non-clustered node by returning the localhost address, otherwise Cassandra will fail to start
         if (seeds.isEmpty()) {
             seeds.add("127.0.0.1");
         }
         return seeds;
     }
-
+    
     public boolean isSeed()
     {
-        populateRacMap();
+        ListMultimap<String, PriamInstance> locMap = getRacMap();
         String ip = locMap.get(myInstance.getRac()).get(0).getHostName();
         return myInstance.getHostName().equals(ip);
     }
     
-    public boolean isReplace(){
+    public boolean isReplace()
+    {
         return isReplace;
     }
 }
