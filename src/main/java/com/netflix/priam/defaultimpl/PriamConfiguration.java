@@ -76,6 +76,7 @@ public class PriamConfiguration implements IConfiguration
     private static final String CONFIG_BACKUP_RACS = PRIAM_PRE + ".backup.racs";
     private static final String CONFIG_MULTITHREADED_COMPACTION = PRIAM_PRE + ".multithreaded.compaction";
     private static final String CONFIG_STREAMING_THROUGHPUT_MB = PRIAM_PRE + ".streaming.throughput.mb";
+    private static final String CONFIG_SECURITY_GROUP_NAME = PRIAM_PRE + ".security.group.name";
 
     // Amazon specific
     private static final String CONFIG_ASG_NAME = PRIAM_PRE + ".az.asgname";
@@ -101,6 +102,7 @@ public class PriamConfiguration implements IConfiguration
     private final String DEFAULT_CASS_STOP_SCRIPT = "/etc/init.d/cassandra stop";
     private final String DEFAULT_BACKUP_LOCATION = "backup";
     private final String DEFAULT_BUCKET_NAME = "cassandra-archive";
+    private final String DEFAULT_SECURITY_GROUP_NAME = "cass_cluster";
     private String DEFAULT_AVAILABILITY_ZONES = "";
 
     private final String DEFAULT_MAX_DIRECT_MEM = "50G";
@@ -354,6 +356,12 @@ public class PriamConfiguration implements IConfiguration
     public String getAppName()
     {
         return config.getProperty(CONFIG_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
+    }
+
+    @Override
+    public String getSecurityGroupName()
+    {
+        return config.getProperty(CONFIG_SECURITY_GROUP_NAME, DEFAULT_SECURITY_GROUP_NAME);
     }
 
     @Override

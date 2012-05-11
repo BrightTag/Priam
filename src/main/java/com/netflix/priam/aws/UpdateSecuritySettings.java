@@ -2,8 +2,6 @@ package com.netflix.priam.aws;
 
 import java.util.Set;
 
-import javax.ws.rs.HEAD;
-
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -53,8 +51,7 @@ public class UpdateSecuritySettings
         this.factory = factory;
         this.clusterName = config.getAppName();
         this.port = port;
-        // todo: create a distinct configuration for the security group
-        this.securityGroupName = config.getAppName();
+        this.securityGroupName = config.getSecurityGroupName();
     }
 
     private static final Function<PriamInstance, String> INSTANCE_TO_IP_RANGE = new Function<PriamInstance, String>()

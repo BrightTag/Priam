@@ -27,9 +27,10 @@ public class UpdateSecuritySettingsTest {
         final int gossipPort = 9999;
         
         new NonStrictExpectations() {{
-            config.getAppName(); result = "my_cassandra_app"; times = 2;
+            config.getAppName(); result = "my_cassandra_app";
+            config.getSecurityGroupName(); result = "cassandra_sec";
             // one old ip address is existing...
-            membership.listIpRangesInSecurityGroup("my_cassandra_app"); result =
+            membership.listIpRangesInSecurityGroup("cassandra_sec"); result =
               ImmutableSet.of("1.1.1.1/32", "2.2.2.2/32");
             // and one new ip address should be added
             factory.getAllIds("my_cassandra_app"); result =
@@ -40,8 +41,8 @@ public class UpdateSecuritySettingsTest {
             new UpdateSecuritySettings(config, membership, factory, gossipPort).updateSecurityGroup());
 
         new Verifications() {{
-            membership.addIngressRules("my_cassandra_app", ImmutableSet.of("3.3.3.3/32"), gossipPort);
-            membership.removeIngressRules("my_cassandra_app", ImmutableSet.of("1.1.1.1/32"), gossipPort);
+            membership.addIngressRules("cassandra_sec", ImmutableSet.of("3.3.3.3/32"), gossipPort);
+            membership.removeIngressRules("cassandra_sec", ImmutableSet.of("1.1.1.1/32"), gossipPort);
         }};
     }
   

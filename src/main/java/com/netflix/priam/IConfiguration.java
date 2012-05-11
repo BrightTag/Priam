@@ -120,6 +120,11 @@ public interface IConfiguration
     public String getAppName();
 
     /**
+     * @return Security group name
+     */
+    public String getSecurityGroupName();
+    
+    /**
      * @return RAC (or zone for AWS)
      */
     public String getRac();

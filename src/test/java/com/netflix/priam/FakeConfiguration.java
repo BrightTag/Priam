@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import com.google.inject.Singleton;
-import com.netflix.priam.IConfiguration;
 
 @Singleton
 public class FakeConfiguration implements IConfiguration
@@ -358,4 +357,9 @@ public class FakeConfiguration implements IConfiguration
         return false;
     }
 
+    @Override
+    public String getSecurityGroupName()
+    {
+        return "securityGroup";
+    }
 }
