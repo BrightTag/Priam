@@ -38,7 +38,8 @@ public class CassandraConfigTest
     public void getSeeds() throws Exception
     {
         final List<String> seeds = ImmutableList.of("seed1", "seed2", "seed3");
-        new NonStrictExpectations() {
+        new NonStrictExpectations()
+        {
             InstanceIdentity identity;
 
             {
@@ -56,7 +57,8 @@ public class CassandraConfigTest
     public void getSeeds_notFound() throws Exception
     {
         final List<String> seeds = ImmutableList.of();
-        new NonStrictExpectations() {
+        new NonStrictExpectations()
+        {
             InstanceIdentity identity;
 
             {
@@ -72,7 +74,8 @@ public class CassandraConfigTest
     @Test
     public void getSeeds_handlesUnknownHostException() throws Exception
     {
-        new Expectations() {
+        new Expectations()
+        {
             InstanceIdentity identity;
 
             {
@@ -89,7 +92,8 @@ public class CassandraConfigTest
     public void getToken()
     {
         final String token = "myToken";
-        new NonStrictExpectations() {
+        new NonStrictExpectations()
+        {
             InstanceIdentity identity;
             PriamInstance instance;
 
@@ -109,7 +113,8 @@ public class CassandraConfigTest
     public void getToken_notFound()
     {
         final String token = "";
-        new NonStrictExpectations() {
+        new NonStrictExpectations()
+        {
             InstanceIdentity identity;
             PriamInstance instance;
 
@@ -127,7 +132,8 @@ public class CassandraConfigTest
     @Test
     public void getToken_handlesException()
     {
-        new NonStrictExpectations() {
+        new NonStrictExpectations()
+        {
             InstanceIdentity identity;
             PriamInstance instance;
 
@@ -145,7 +151,8 @@ public class CassandraConfigTest
     @Test
     public void isReplaceToken()
     {
-        new NonStrictExpectations() {
+        new NonStrictExpectations()
+        {
             InstanceIdentity identity;
 
             {
@@ -162,7 +169,8 @@ public class CassandraConfigTest
     @Test
     public void isReplaceToken_handlesException()
     {
-        new Expectations() {
+        new Expectations()
+        {
             InstanceIdentity identity;
 
             {
@@ -178,10 +186,13 @@ public class CassandraConfigTest
     @Test
     public void doubleRing() throws Exception
     {
-        new NonStrictExpectations() {{
-            doubleRing.backup();
-            doubleRing.doubleSlots();
-        }};
+        new NonStrictExpectations()
+        {
+            {
+                doubleRing.backup();
+                doubleRing.doubleSlots();
+            }
+        };
 
         Response response = resource.doubleRing();
         assertEquals(200, response.getStatus());
@@ -191,40 +202,49 @@ public class CassandraConfigTest
     public void doubleRing_ioExceptionInBackup() throws Exception
     {
         final IOException exception = new IOException();
-        new NonStrictExpectations() {{
-            doubleRing.backup(); result = exception;
-            doubleRing.restore();
-        }};
+        new NonStrictExpectations()
+        {
+            {
+                doubleRing.backup(); result = exception;
+                doubleRing.restore();
+            }
+        };
 
         try
         {
-          resource.doubleRing();
-          fail("Excepted RuntimeException");
+            resource.doubleRing();
+            fail("Excepted RuntimeException");
         }
         catch (RuntimeException e)
         {
-          assertEquals(exception, e.getCause());
+            assertEquals(exception, e.getCause());
         }
     }
 
-    @Test(expected=IOException.class)
+    @Test(expected = IOException.class)
     public void doubleRing_ioExceptionInRestore() throws Exception
     {
-        new NonStrictExpectations() {{
-            doubleRing.backup(); result = new IOException();
-            doubleRing.restore(); result = new IOException();
-        }};
+        new NonStrictExpectations()
+        {
+            {
+                doubleRing.backup(); result = new IOException();
+                doubleRing.restore(); result = new IOException();
+            }
+        };
 
         resource.doubleRing();
     }
 
-    @Test(expected=ClassNotFoundException.class)
+    @Test(expected = ClassNotFoundException.class)
     public void doubleRing_classNotFoundExceptionInRestore() throws Exception
     {
-        new NonStrictExpectations() {{
-            doubleRing.backup(); result = new IOException();
-            doubleRing.restore(); result = new ClassNotFoundException();
-        }};
+        new NonStrictExpectations()
+        {
+            {
+                doubleRing.backup(); result = new IOException();
+                doubleRing.restore(); result = new ClassNotFoundException();
+            }
+        };
 
         resource.doubleRing();
     }

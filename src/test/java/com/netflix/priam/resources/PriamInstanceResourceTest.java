@@ -37,7 +37,8 @@ public class PriamInstanceResourceTest
     @Test
     public void getInstances()
     {
-        new Expectations() {
+        new Expectations()
+        {
             PriamInstance instance1, instance2, instance3;
             List<PriamInstance> instances = ImmutableList.of(instance1, instance2, instance3);
 
@@ -57,7 +58,8 @@ public class PriamInstanceResourceTest
     public void getInstance()
     {
         final String expected = "plain text describing the instance";
-        new Expectations() {
+        new Expectations()
+        {
             PriamInstance instance;
 
             {
@@ -73,16 +75,20 @@ public class PriamInstanceResourceTest
     @Test
     public void getInstance_notFound()
     {
-        new Expectations() {{
-            config.getAppName(); result = APP_NAME;
-            factory.getInstance(APP_NAME, NODE_ID); result = null;
-        }};
+        new Expectations()
+        {
+            {
+                config.getAppName(); result = APP_NAME;
+                factory.getInstance(APP_NAME, NODE_ID); result = null;
+            }
+        };
 
         try
         {
             resource.getInstance(NODE_ID);
             fail("Expected WebApplicationException thrown");
-        } catch(WebApplicationException e)
+        }
+        catch (WebApplicationException e)
         {
             assertEquals(404, e.getResponse().getStatus());
             assertEquals("No priam instance with id " + NODE_ID + " found", e.getResponse().getEntity());
@@ -98,32 +104,34 @@ public class PriamInstanceResourceTest
         final String rack = "us-east-1a";
         final String token = "1234567890";
 
-        new Expectations() {
-          PriamInstance instance;
+        new Expectations()
+        {
+            PriamInstance instance;
 
-          {
-              config.getAppName(); result = APP_NAME;
-              factory.create(APP_NAME, NODE_ID, instanceID, hostname, ip, rack, null, token); result = instance;
-              instance.getId(); result = NODE_ID;
-          }
+            {
+                config.getAppName(); result = APP_NAME;
+                factory.create(APP_NAME, NODE_ID, instanceID, hostname, ip, rack, null, token); result = instance;
+                instance.getId(); result = NODE_ID;
+            }
         };
 
         Response response = resource.createInstance(NODE_ID, instanceID, hostname, ip, rack, token);
         assertEquals(201, response.getStatus());
-        assertEquals("/"+NODE_ID, response.getMetadata().getFirst("location").toString());
+        assertEquals("/" + NODE_ID, response.getMetadata().getFirst("location").toString());
     }
 
     @Test
     public void deleteInstance()
     {
-        new Expectations() {
-          PriamInstance instance;
+        new Expectations()
+        {
+            PriamInstance instance;
 
-          {
-              config.getAppName(); result = APP_NAME;
-              factory.getInstance(APP_NAME, NODE_ID); result = instance;
-              factory.delete(instance);
-          }
+            {
+                config.getAppName(); result = APP_NAME;
+                factory.getInstance(APP_NAME, NODE_ID); result = instance;
+                factory.delete(instance);
+            }
         };
 
         Response response = resource.deleteInstance(NODE_ID);
@@ -133,16 +141,20 @@ public class PriamInstanceResourceTest
     @Test
     public void deleteInstance_notFound()
     {
-        new Expectations() {{
-            config.getAppName(); result = APP_NAME;
-            factory.getInstance(APP_NAME, NODE_ID); result = null;
-        }};
+        new Expectations()
+        {
+            {
+                config.getAppName(); result = APP_NAME;
+                factory.getInstance(APP_NAME, NODE_ID); result = null;
+            }
+        };
 
         try
         {
             resource.getInstance(NODE_ID);
             fail("Expected WebApplicationException thrown");
-        } catch(WebApplicationException e)
+        }
+        catch (WebApplicationException e)
         {
             assertEquals(404, e.getResponse().getStatus());
             assertEquals("No priam instance with id " + NODE_ID + " found", e.getResponse().getEntity());
