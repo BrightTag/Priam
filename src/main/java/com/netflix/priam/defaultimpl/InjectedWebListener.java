@@ -4,9 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.Lists;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -18,6 +15,9 @@ import com.netflix.priam.PriamServer;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InjectedWebListener extends GuiceServletContextListener
 {
@@ -33,7 +33,14 @@ public class InjectedWebListener extends GuiceServletContextListener
         try
         {
             injector.getInstance(IConfiguration.class).intialize();
-            injector.getInstance(PriamServer.class).initialize();
+            if (Boolean.getBoolean("priam.tasks.disable"))
+            {
+                logger.warn("Starting up with REST interface only; scheduled tasks DISABLED");
+            } else
+            {
+                logger.info("Starting PriamService; scheduled tasks enabled");
+                injector.getInstance(PriamServer.class).initialize();
+            }
         }
         catch (Exception e)
         {
