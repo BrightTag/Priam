@@ -120,8 +120,11 @@ public class InstanceIdentity
                 logger.info("Found dead instances: " + dead.getInstanceId());
                 PriamInstance markAsDead = factory.create(dead.getApp() + "-dead", dead.getId(), dead.getInstanceId(), dead.getHostName(), dead.getHostIP(), dead.getRac(), dead.getVolumes(),
                         dead.getToken());
+
+                // GAO: HACK!  Want to gut all this, but for now don't want Priam deleting rows from SimpleDB!
                 // remove it as we marked it down...
-                factory.delete(dead);
+                //factory.delete(dead);
+
                 isReplace = true;
                 String payLoad = markAsDead.getToken();
                 logger.info("Trying to grab slot {} with availability zone {}", markAsDead.getId(), markAsDead.getRac());
