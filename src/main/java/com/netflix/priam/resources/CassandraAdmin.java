@@ -7,8 +7,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import javax.ws.rs.GET;
@@ -18,25 +18,25 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.apache.cassandra.concurrent.JMXEnabledThreadPoolExecutorMBean;
-import org.apache.cassandra.config.ConfigurationException;
-import org.apache.cassandra.db.ColumnFamilyStoreMBean;
-import org.apache.cassandra.db.compaction.CompactionManagerMBean;
-import org.apache.cassandra.db.compaction.CompactionInfo;
-import org.apache.cassandra.net.MessagingServiceMBean;
-import org.apache.cassandra.utils.EstimatedHistogram;
-import org.apache.commons.lang.StringUtils;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.codehaus.jettison.json.JSONArray;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.netflix.priam.IConfiguration;
 import com.netflix.priam.utils.JMXNodeTool;
 import com.netflix.priam.utils.SystemUtils;
+
+import org.apache.cassandra.concurrent.JMXEnabledThreadPoolExecutorMBean;
+import org.apache.cassandra.config.ConfigurationException;
+import org.apache.cassandra.db.ColumnFamilyStoreMBean;
+import org.apache.cassandra.db.compaction.CompactionInfo;
+import org.apache.cassandra.db.compaction.CompactionManagerMBean;
+import org.apache.cassandra.net.MessagingServiceMBean;
+import org.apache.cassandra.utils.EstimatedHistogram;
+import org.apache.commons.lang.StringUtils;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Do general operations. Start/Stop and some JMX node tool commands
@@ -449,4 +449,22 @@ public class CassandraAdmin
         return Response.ok(rootObj, MediaType.APPLICATION_JSON).build();
     }
 
+    @GET
+    @Path("/cfstats")
+    public Response cfstats(@QueryParam(REST_HEADER_KEYSPACES) String keyspace, @QueryParam(REST_HEADER_CFS) String cfname) 
+        throws IOException, ExecutionException, InterruptedException, JSONException
+    {
+      JMXNodeTool nodetool = JMXNodeTool.instance(config);
+      if (StringUtils.isBlank(keyspace) || StringUtils.isBlank(cfname))
+        return Response.status(400).entity("Missing keyspace/cfname in request").build();
+  
+      ColumnFamilyStoreMBean mbean = nodetool.getCfsProxy(keyspace, cfname);
+      JSONObject rootObj = new JSONObject();
+      rootObj.put("readCount", mbean.getReadCount());
+      rootObj.put("writeCount", mbean.getWriteCount());
+      rootObj.put("bloomFilterFalseRatio", mbean.getBloomFilterFalseRatio());
+  
+      return Response.ok(rootObj, MediaType.APPLICATION_JSON).build();
+    }
 }
+
