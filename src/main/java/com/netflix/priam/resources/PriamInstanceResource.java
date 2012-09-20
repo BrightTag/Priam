@@ -14,6 +14,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
+import com.google.common.base.Strings;
 import com.google.inject.Inject;
 import com.netflix.priam.IConfiguration;
 import com.netflix.priam.identity.IPriamInstanceFactory;
@@ -82,11 +83,14 @@ public class PriamInstanceResource
     public Response createInstance(
         @QueryParam("id") int id, @QueryParam("instanceID") String instanceID,
         @QueryParam("hostname") String hostname, @QueryParam("ip") String ip,
-        @QueryParam("rack") String rack, @QueryParam("token") String token)
+        @QueryParam("rack") String rack, @QueryParam("token") String token,
+        @QueryParam("app") String app)
     {
+        // all for overriding default app name
+        String appDomain = Strings.emptyToNull(app) != null ? app : config.getAppName();
         log.info("Creating instance [id={}, instanceId={}, hostname={}, ip={}, rack={}, token={}",
             new Object[]{ id, instanceID, hostname, ip, rack, token });
-        PriamInstance instance = factory.create(config.getAppName(), id, instanceID, hostname, ip, rack, null, token);
+        PriamInstance instance = factory.create(appDomain, id, instanceID, hostname, ip, rack, null, token);
         URI uri = UriBuilder.fromPath("/{id}").build(instance.getId());
         return Response.created(uri).build();
     }
